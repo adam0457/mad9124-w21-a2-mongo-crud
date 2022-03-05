@@ -35,7 +35,7 @@ router.get('/:id', async (req, res) => {
 router.patch('/:id', async (req, res) => {
     try {
       const {_id, ...otherAttributes} = req.body.data.attributes
-      const student = await Student.findByIdAndUpdate(
+      const course = await Course.findByIdAndUpdate(
         req.params.id,
         {_id: req.params.id, ...otherAttributes},
         {
@@ -43,8 +43,8 @@ router.patch('/:id', async (req, res) => {
           runValidators: true
         }
       )
-      if (!student) throw new Error('Resource not found')
-      res.json({data: formatResponseData('students', student.toObject())})
+      if (!course) throw new Error('Resource not found')
+      res.json({data: formatResponseData('courses', course.toObject())})
     } catch (err) {
       sendResourceNotFound(req, res)
     }
