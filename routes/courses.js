@@ -13,10 +13,10 @@ router.post('/', async (req, res) => {
   let attributes = req.body.data.attributes
   delete attributes._id // if it exists
 
-  let newStudent = new Student(attributes)
-  await newStudent.save()
+  let newCourse = new Course(attributes)
+  await newCourse.save()
 
-  res.status(201).json({data: formatResponseData('students', newStudent.toObject())})
+  res.status(201).json({data: formatResponseData('courses', newCourse.toObject())})
 })
 
 router.get('/:id', async (req, res) => {
