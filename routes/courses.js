@@ -20,13 +20,13 @@ router.post('/', async (req, res) => {
 })
 
 router.get('/:id', async (req, res) => {
-  console.log(req.params.id)
+
     try {
-      const student = await Student.findById(req.params.id)//.populate('owner')
-      if(!student){
+      const course = await Course.findById(req.params.id).populate('students')
+      if(!course){
           throw new Error('Resource not found')
       }
-      res.json({data: formatResponseData('students', student.toObject())})
+      res.json({data: formatResponseData('courses', course.toObject())})
     }catch(err) {
       sendResourceNotFound(req, res)
     }
@@ -96,7 +96,7 @@ function sendResourceNotFound(req, res){
       {
         status: '404',
         title: 'Resource does not exist',
-        description: `We could not find a student with id: ${req.params.id}`
+        description: `We could not find a course with id: ${req.params.id}`
       }
     ]
   })

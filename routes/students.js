@@ -20,7 +20,7 @@ router.post('/', async (req, res) => {
 })
 
 router.get('/:id', async (req, res) => {
-  console.log(req.params.id)
+  
     try {
       const student = await Student.findById(req.params.id)//.populate('owner')
       if(!student){
