@@ -2,6 +2,7 @@
 
 const express = require('express')
 const router = express.Router()
+const sanitizeBody = require('../middleware/sanitizeBody')
 const Student = require('../models/Student')
 
 router.get('/', async (req, res) => {
@@ -9,20 +10,24 @@ router.get('/', async (req, res) => {
   res.json({data: students.map(student => formatResponseData('students', student.toObject()))})
 })
 
-router.post('/', async (req, res) => {
-  let attributes = req.body.data.attributes
-  delete attributes._id // if it exists
+router.post('/', sanitizeBody, async (req, res) => {
+  
+    try{
+      let newStudent = new Student(req.sanitizedBody)    
+      await newStudent.save()    
+      res.status(201).json({data: formatResponseData('students', newStudent.toObject())})
 
-  let newStudent = new Student(attributes)
-  await newStudent.save()
+    }catch(err){
 
-  res.status(201).json({data: formatResponseData('students', newStudent.toObject())})
-})
+      sendNotAbleToPostError()
+    }
+
+  })
 
 router.get('/:id', async (req, res) => {
   
     try {
-      const student = await Student.findById(req.params.id)//.populate('owner')
+      const student = await Student.findById(req.params.id)
       if(!student){
           throw new Error('Resource not found')
       }
@@ -32,30 +37,32 @@ router.get('/:id', async (req, res) => {
     }
 })
 
-router.patch('/:id', async (req, res) => {
-    try {
-      const {_id, ...otherAttributes} = req.body.data.attributes
-      const student = await Student.findByIdAndUpdate(
-        req.params.id,
-        {_id: req.params.id, ...otherAttributes},
-        {
-          new: true,
-          runValidators: true
-        }
-      )
-      if (!student) throw new Error('Resource not found')
-      res.json({data: formatResponseData('students', student.toObject())})
-    } catch (err) {
-      sendResourceNotFound(req, res)
-    }
-})
 
-router.put('/:id', async (req, res) => {
-    try {
-      const {_id, ...otherAttributes} = req.body.data.attributes
+router.patch('/:id', sanitizeBody, async (req, res) => {
+  
+      try {      
+        const student = await Student.findByIdAndUpdate(
+          req.params.id,
+        
+          { ...req.sanitizedBody},
+          {
+            new: true,
+            runValidators: true
+          }
+        )        
+
+        if (!student) throw new Error('Resource not found')
+        res.json({data: formatResponseData('students', student.toObject())})
+      } catch (err) {
+        sendResourceNotFound(req, res)
+      }
+  })
+
+router.put('/:id', sanitizeBody, async (req, res) => {
+    try {    
       const student = await Student.findByIdAndUpdate(
-        req.params.id,
-        {_id: req.params.id, ...otherAttributes},
+        req.params.id,      
+        {...req.sanitizedBody},
         {
           new: true,
           overwrite: true,
@@ -66,6 +73,7 @@ router.put('/:id', async (req, res) => {
       res.json({data: formatResponseData('students', student.toObject())})
     } catch (err) {
       sendResourceNotFound(req, res)
+      
     }
 })
 
@@ -86,8 +94,8 @@ router.delete('/:id', async (req, res) => {
  * @returns
  */
 function formatResponseData(type, resource) {
-  const {id, ...attributes} = resource
-  return {type, id, attributes}
+    const {id, ...attributes} = resource
+    return {type, id, attributes}
 }
 
 function sendResourceNotFound(req, res){
@@ -97,6 +105,18 @@ function sendResourceNotFound(req, res){
         status: '404',
         title: 'Resource does not exist',
         description: `We could not find a student with id: ${req.params.id}`
+      }
+    ]
+  })
+}
+
+function sendNotAbleToPostError(){
+  res.status(400).send({
+    errors: [
+      {
+        status: '400',
+        title: 'Problem with the data',
+        description: `We were not able to save your data`
       }
     ]
   })
