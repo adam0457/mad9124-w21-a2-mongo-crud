@@ -2,6 +2,7 @@
 
 const express = require('express')
 const router = express.Router()
+const sanitizeBody = require('../middleware/sanitizeBody')
 const Course = require('../models/Course')
 
 router.get('/', async (req, res) => {
@@ -9,14 +10,18 @@ router.get('/', async (req, res) => {
   res.json({data: courses.map(course => formatResponseData('courses', course.toObject()))})
 })
 
-router.post('/', async (req, res) => {
-  let attributes = req.body.data.attributes
-  delete attributes._id // if it exists
+router.post('/', sanitizeBody, async (req, res) => {
+  try{
 
-  let newCourse = new Course(attributes)
-  await newCourse.save()
+    let newCourse = new Course(req.sanitizedBody)
+    await newCourse.save()
+    res.status(201).json({data: formatResponseData('courses', newCourse.toObject())})
 
-  res.status(201).json({data: formatResponseData('courses', newCourse.toObject())})
+  }catch(err){
+    sendNotAbleToPostError(res)
+
+  }
+
 })
 
 router.get('/:id', async (req, res) => {
@@ -32,12 +37,12 @@ router.get('/:id', async (req, res) => {
     }
 })
 
-router.patch('/:id', async (req, res) => {
+router.patch('/:id', sanitizeBody, async (req, res) => {
     try {
-      const {_id, ...otherAttributes} = req.body.data.attributes
+    
       const course = await Course.findByIdAndUpdate(
-        req.params.id,
-        {_id: req.params.id, ...otherAttributes},
+        req.params.id,      
+        {...req.sanitizedBody},
         {
           new: true,
           runValidators: true
@@ -50,12 +55,12 @@ router.patch('/:id', async (req, res) => {
     }
 })
 
-router.put('/:id', async (req, res) => {
+router.put('/:id', sanitizeBody, async (req, res) => {
     try {
-      const {_id, ...otherAttributes} = req.body.data.attributes
+    
       const course = await Course.findByIdAndUpdate(
-        req.params.id,
-        {_id: req.params.id, ...otherAttributes},
+        req.params.id,       
+        {...req.sanitizedBody},
         {
           new: true,
           overwrite: true,
@@ -97,6 +102,18 @@ function sendResourceNotFound(req, res){
         status: '404',
         title: 'Resource does not exist',
         description: `We could not find a course with id: ${req.params.id}`
+      }
+    ]
+  })
+}
+
+function sendNotAbleToPostError(res){
+  res.status(400).send({
+    errors: [
+      {
+        status: '400',
+        title: 'Problem with the data',
+        description: `We were not able to save your data`
       }
     ]
   })

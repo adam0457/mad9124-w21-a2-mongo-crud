@@ -19,7 +19,7 @@ router.post('/', sanitizeBody, async (req, res) => {
 
     }catch(err){
 
-      sendNotAbleToPostError()
+      sendNotAbleToPostError(res)
     }
 
   })
@@ -110,7 +110,7 @@ function sendResourceNotFound(req, res){
   })
 }
 
-function sendNotAbleToPostError(){
+function sendNotAbleToPostError(res){
   res.status(400).send({
     errors: [
       {
